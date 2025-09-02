@@ -48,7 +48,7 @@ PAO.EnergyShift       0.15 eV
 
 #============== MD variables =======
 MD.TypeOfRun          CG
-MD.NumCGsteps         100
+MD.NumCGsteps         40
 MD.MaxForceTol        0.01 eV/Ang
 MD.MaxStressTol       0.01 GPa
 MD.UseSaveXV          .true.
@@ -66,3 +66,37 @@ DM.Tolerance           1.d-4
 
 SolutionMethod        diagon
 ParallelOverK         .true.
+
+WriteMullikenPop                 1
+WriteKbands                     .true.
+WriteBands                      .true.
+SaveRho                         .true.
+SaveDeltaRho                    .true.
+SaveHS                          .false.
+SaveElectrostaticPotential      F
+SaveTotalPotential              no
+WriteCoorXmol                   .true.
+WriteMDXmol                     .true.
+WriteMDhistory                  .false.
+WriteEigenvalues                 yes
+
+%block ProjectedDensityOfStates
+       -16.00  12.00  0.05  3500  eV
+%endblock ProjectedDensityOfStates
+
+%block PDOS.kgrid_Monkhorst_Pack
+    30 0   0  0.0
+    0  40  0  0.0
+    0  0   1   0.0
+%endblock PDOS.kgrid_Monkhorst_Pack
+
+BandLinesScale ReciprocalLatticeVectors
+
+%block BandLines
+1    0.0 0.0 0.0   G
+100  0.5 0.0 0.0   X
+100  0.5 0.5 0.0   S
+100  0.0 0.5 0.0   Y
+100  0.0 0.0 0.0   G
+100  0.5 0.5 0.0   S
+%endblock BandLines
