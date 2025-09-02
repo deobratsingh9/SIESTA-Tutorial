@@ -18,8 +18,8 @@ LatticeConstant 1.0 Ang
 
 
 %block kgrid_Monkhorst_Pack
- 30   0   0    0.0
- 0    40  0    0.0
+ 10   0   0    0.0
+ 0    20  0    0.0
  0    0   1    0.0
 %endblock kgrid_Monkhorst_Pack
 
@@ -30,11 +30,10 @@ AtomCoorFormatOut       Ang
       3.00503088       1.87056124      11.90590979    2    7 
       1.57198925       1.87056521      11.90593770    2    7 
       3.72131032       0.62267451      11.90665219    1    5 
-      0.85568101       0.62267824      11.90667613    1    5 
+      0.85568101       0.62267824      11.90667613    1    5
 %endblock AtomicCoordinatesAndAtomicSpecies
 
-#======= General variables ======
-SpinPolarized    .true.
+##======= General variables ======
 PAO.BasisSize     DZP
 PAO.SplitTailNorm true
 PAO.SplitNormH          0.30
@@ -42,22 +41,22 @@ PAO.SplitNormH          0.30
 MeshCutoff            250.0 Ry
 XC.functional         GGA 
 XC.authors            PBE
-ElectronicTemperature   25 meV
+ElectronicTemperature    25 meV
 UseSaveData           .true.
 PAO.EnergyShift       0.15 eV
 
 #============== MD variables =======
 MD.TypeOfRun          CG
-MD.NumCGsteps         100
+MD.NumCGsteps         0
 MD.MaxForceTol        0.01 eV/Ang
-MD.MaxStressTol       0.01 GPa
+MD.MaxStressTol       0.05 GPa
 MD.UseSaveXV          .true.
 MD.FinalTimeStep      1
-MD.VariableCell F
-MD.ConstantVolume T
+
+#=================================
 #======== SCF variables ==========
 MaxSCFIterations      1000
-DM.MixingWeight       0.01
+DM.MixingWeight       0.08
 DM.NumberPulay        3
 DM.UseSaveDM          .true.
 DM.Tolerance           1.d-4
@@ -66,3 +65,16 @@ DM.Tolerance           1.d-4
 
 SolutionMethod        diagon
 ParallelOverK         .true.
+
+SpinPolarized                   .true.
+WriteMullikenPop                1
+WriteBands                      .false.
+SaveRho                         .false.
+SaveDeltaRho                    .false.
+SaveHS                          .false.
+SaveElectrostaticPotential      F
+SaveTotalPotential              no
+WriteCoorXmol                   .true.
+WriteMDXmol                     .true.
+WriteMDhistory                  .false.
+WriteEigenvalues                yes
