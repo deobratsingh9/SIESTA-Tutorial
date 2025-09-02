@@ -1,0 +1,233 @@
+#!/bin/bash
+#SBATCH -J 2D-BN-material
+#SBATCH -N 2
+#SBATCH --ntasks-per-node=16
+##SBATCH --reservation=devel
+#SBATCH -t 000:20:00
+#SBATCH -A naiss2025-5-112 
+
+module load Siesta/4.1-b4-nsc2-intel-2018a-eb
+
+# Create clean continuation directory
+mkdir -p cont
+
+# Voltage steps (adjust as needed)
+VOLTS="0.20 0.40 0.60 0.80 1.00 1.20 1.40 1.60 1.80 2.00"
+
+for i in $VOLTS; do
+    echo "========================================"
+    echo "Running voltage: $i eV"
+    echo "========================================"
+
+    # Set up working directory for this bias step
+    cp -r cont "$i"
+    cd "$i" || { echo "Failed to enter directory $i"; exit 1; }
+
+    # Copy necessary files from previous step or initial setup
+    cp ../*.ion . 2>/dev/null
+    cp ../*.TSHS . 2>/dev/null
+    cp ../*.TSDE . 2>/dev/null
+    cp ../*.DM .   2>/dev/null
+
+    # Generate scat.fdf input
+    cat > scat.fdf <<EOF
+
+
+
+SolutionMethod        Transiesta
+
+SystemName  b2n2
+SystemLabel scat
+==================================================
+==================================================
+# SPECIES AND BASIS
+
+# Number of species 
+NumberOfSpecies 2
+%block ChemicalSpeciesLabel
+ 1    5    B
+ 2    7    N
+%endblock ChemicalSpeciesLabel
+
+==================================================
+==================================================
+# K-points
+
+%block kgrid_Monkhorst_Pack
+ 1    0    0    0.0
+ 0    20   0    0.0
+ 0    0    1    0.0
+%endblock kgrid_Monkhorst_Pack
+
+
+==================================================
+==================================================
+# Structure
+NumberOfAtoms 16
+LatticeConstant 1.0 Ang
+%block LatticeVectors
+    18.2817522799999992    0.0000340160000000    0.0000000000000000
+    -0.0000051930000000    2.4957905210000000    0.0000000000000000
+     0.0000000000000000    0.0000000000000000   24.0381749109999987
+%endblock LatticeVectors
+AtomicCoordinatesFormat  Ang
+
+%block AtomicCoordinatesAndAtomicSpecies
+      3.00503088       1.87056124      11.90590979    2    7 
+      1.57198925       1.87056521      11.90593770    2    7 
+      3.72131032       0.62267451      11.90665219    1    5 
+      0.85568101       0.62267824      11.90667613    1    5 
+      7.57546895       1.87056974      11.90590979    2    7 
+      6.14242732       1.87057371      11.90593770    2    7 
+      8.29174839       0.62268301      11.90665219    1    5 
+      5.42611908       0.62268675      11.90667613    1    5 
+     12.14590702       1.87057825      11.90590979    2    7 
+     10.71286539       1.87058222      11.90593770    2    7 
+     12.86218646       0.62269152      11.90665219    1    5 
+      9.99655715       0.62269525      11.90667613    1    5 
+     16.71634509       1.87058675      11.90590979    2    7 
+     15.28330346       1.87059072      11.90593770    2    7 
+     17.43262453       0.62270002      11.90665219    1    5 
+     14.56699522       0.62270375      11.90667613    1    5 
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+
+==================================================
+==================================================
+#======= General variables ======
+PAO.BasisSize     DZP
+PAO.SplitTailNorm true
+PAO.SplitNormH          0.30
+
+MeshCutoff            250.0 Ry
+XC.functional         GGA
+XC.authors            PBE
+ElectronicTemperature     25 meV
+UseSaveData           .true.
+SpinPolarized         .true.
+PAO.EnergyShift      0.15 eV
+
+#============== MD variables =======
+MD.TypeOfRun          CG
+MD.NumCGsteps         0
+MD.MaxForceTol        0.01 eV/Ang
+MD.MaxStressTol       0.05 GPa
+MD.UseSaveXV          .true.
+MD.FinalTimeStep      1
+#MD.UseStructFile      .true.
+#=================================
+#======== SCF variables ==========
+# SCF variables
+
+DM.MixSCF1   T
+MaxSCFIterations      1000           # Maximum number of SCF iter
+DM.MixingWeight       0.1          # New DM amount for next SCF cycle
+DM.Tolerance          1.d-4         # Tolerance in maximum difference
+DM.UseSaveDM          true          # to use continuation files
+DM.NumberPulay        3
+TS.MixH               yes
+
+==================================================
+#Other options
+TS.HS.Save          .true.
+TS.DE.Save          .true.
+ParallelOverK       .true.
+#User.Basis          .true.    #when species.ion present in the current directory
+Diag.ParallelOverK  .true. 
+==================================================
+==================================================
+# Output variables
+
+WriteMullikenPop                1
+WriteBands                      .false.
+SaveRho                         .true.
+SaveDeltaRho                    .true.
+SaveHS                          .false.
+SaveElectrostaticPotential      .true. 
+SaveTotalPotential              no
+WriteCoorXmol                   .true.
+WriteMDXmol                     .true.
+WriteMDhistory                  .false.
+WriteEigenvalues                yes
+WriteForces                     .true.
+
+
+==================================================
+==================================================
+TBT.Elecs.Eta    0.0001 eV
+
+
+TS.Elecs.Bulk true
+TS.Elecs.DM.Update none
+TS.Elecs.GF.ReUse false
+TS.Elecs.Neglect.Principal true
+%block TS.Elecs
+  Left
+  Right
+%endblock TS.Elecs
+
+%block TS.Elec.Left
+  TSHS ./leads.TSHS
+#  chem-pot Left
+  semi-inf-dir -a1
+  elec-pos begin 1
+  used-atoms 4
+%endblock TS.Elec.Left
+
+%block TS.Elec.Right
+  TSHS ./leads.TSHS
+#  chem-pot Right
+  semi-inf-dir +a1
+  elec-pos end -1
+  used-atoms 4
+%endblock TS.Elec.Right
+
+%block TBT.k
+  diag 10 20 1
+%endblock
+
+
+TBT.DOS.A.All T
+TS.SolutionMethod btd
+TS.BTD.Pivot atom+Left
+
+%block TBT.Contours
+    line
+%endblock TBT.Contours
+%block TBT.Contour.line
+  part line
+     from -2. eV to 2. eV
+      delta 0.01 eV
+        method mid-rule
+%endblock TBT.Contour.line
+
+%block TBT.Atoms.Device
+atom [5 -- 12]
+%endblock
+
+# TS OPTIONS
+TS.Voltage $i eV
+
+EOF
+
+    # Remove stale output to prevent crash
+    [ -f scat.TBT.nc ] && rm scat.TBT.nc
+
+    # Run tbtrans
+    echo "Running tbtrans for $i eV..."
+    mpprun tbtrans < scat.fdf > TBT.out
+    if [ $? -ne 0 ]; then
+        echo "tbtrans failed at voltage $i"
+        exit 1
+    fi
+
+    # Extract IV data
+    grep "Left -> Right" TBT.out | awk '{print $9, $11, $12}' >> ../IV.dat
+    # Copy output to continuation directory for next run
+    cp scat.TBT.nc ../cont/
+    cp scat.TSHS ../cont/
+    cp scat.TSDE ../cont/
+    cp scat.DM ../cont/
+
+    cd ..
+done
