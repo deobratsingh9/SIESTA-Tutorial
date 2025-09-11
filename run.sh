@@ -176,6 +176,11 @@ MD.UseSaveXV          .true.
 MD.FinalTimeStep      1
 #MD.UseStructFile      .true.
 #=================================
+# Exchange-correlation and vdW
+XC.functional     GGA
+XC.authors        PBE
+VDWcorrection     .true.
+VDWscheme         DRSLL
 #======== SCF variables ==========
 # SCF variables
 
